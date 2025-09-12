@@ -1,0 +1,7 @@
+# Cloudflare Pages Redirects Configuration
+
+# SPA fallback - redirect all non-file requests to index.html
+/*    /index.html   200
+
+# API routes - redirect to Cloudflare Workers
+/api/*  https://your-worker.your-subdomain.workers.dev/:splat  200

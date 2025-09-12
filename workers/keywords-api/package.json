@@ -1,0 +1,26 @@
+{
+  "name": "keywords-api",
+  "version": "1.0.0",
+  "description": "Cloudflare Workers API for Keywords Management System",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:dev": "wrangler deploy --env dev",
+    "tail": "wrangler tail",
+    "kv:create": "wrangler kv:namespace create KEYWORDS_KV",
+    "kv:create:preview": "wrangler kv:namespace create KEYWORDS_KV --preview"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "api",
+    "keywords",
+    "kv"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

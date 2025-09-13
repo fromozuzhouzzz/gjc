@@ -38,13 +38,7 @@ function createErrorResponse(message, status = 400) {
   return createResponse({ error: message }, status);
 }
 
-// 验证用户ID
-function validateUserId(userId) {
-  if (!userId || typeof userId !== 'string' || userId.length < 5) {
-    return false;
-  }
-  return true;
-}
+// 验证用户ID函数已移除 - 系统改为全局共享模式
 
 // 验证关键词数组
 function validateKeywords(keywords) {
@@ -62,23 +56,16 @@ function validateKeywords(keywords) {
   return true;
 }
 
-// 获取关键词
+// 获取关键词 - 全局共享模式
 async function getKeywords(request, env) {
-  const url = new URL(request.url);
-  const userId = url.searchParams.get('userId');
-  
-  if (!validateUserId(userId)) {
-    return createErrorResponse('无效的用户ID');
-  }
-  
   try {
-    const key = `keywords:${userId}`;
+    const key = 'global_keywords';
     const data = await env.KEYWORDS_KV.get(key);
-    
+
     if (!data) {
       return createResponse({ keywords: [] });
     }
-    
+
     const parsed = JSON.parse(data);
     return createResponse({
       keywords: parsed.keywords || [],
@@ -90,41 +77,36 @@ async function getKeywords(request, env) {
   }
 }
 
-// 保存关键词
+// 保存关键词 - 全局共享模式
 async function saveKeywords(request, env) {
   try {
     const body = await request.json();
-    const { userId, keywords } = body;
-    
-    if (!validateUserId(userId)) {
-      return createErrorResponse('无效的用户ID');
-    }
-    
+    const { keywords } = body;
+
     if (!validateKeywords(keywords)) {
       return createErrorResponse('无效的关键词数据');
     }
-    
+
     // 限制关键词数量
     if (keywords.length > 1000) {
       return createErrorResponse('关键词数量不能超过1000个');
     }
-    
+
     // 限制单个关键词长度
     for (const keyword of keywords) {
       if (keyword.length > 100) {
         return createErrorResponse('单个关键词长度不能超过100个字符');
       }
     }
-    
-    const key = `keywords:${userId}`;
+
+    const key = 'global_keywords';
     const data = {
       keywords: keywords.map(k => k.trim()).filter(k => k.length > 0),
       updatedAt: new Date().toISOString(),
-      userId: userId,
     };
-    
+
     await env.KEYWORDS_KV.put(key, JSON.stringify(data));
-    
+
     return createResponse({
       success: true,
       message: '关键词保存成功',
@@ -137,19 +119,12 @@ async function saveKeywords(request, env) {
   }
 }
 
-// 删除关键词
+// 删除关键词 - 全局共享模式
 async function deleteKeywords(request, env) {
-  const url = new URL(request.url);
-  const userId = url.searchParams.get('userId');
-  
-  if (!validateUserId(userId)) {
-    return createErrorResponse('无效的用户ID');
-  }
-  
   try {
-    const key = `keywords:${userId}`;
+    const key = 'global_keywords';
     await env.KEYWORDS_KV.delete(key);
-    
+
     return createResponse({
       success: true,
       message: '关键词删除成功',
@@ -160,26 +135,19 @@ async function deleteKeywords(request, env) {
   }
 }
 
-// 获取用户统计信息
-async function getUserStats(request, env) {
-  const url = new URL(request.url);
-  const userId = url.searchParams.get('userId');
-  
-  if (!validateUserId(userId)) {
-    return createErrorResponse('无效的用户ID');
-  }
-  
+// 获取统计信息 - 全局共享模式
+async function getStats(request, env) {
   try {
-    const key = `keywords:${userId}`;
+    const key = 'global_keywords';
     const data = await env.KEYWORDS_KV.get(key);
-    
+
     if (!data) {
       return createResponse({
         keywordCount: 0,
         lastUpdated: null,
       });
     }
-    
+
     const parsed = JSON.parse(data);
     return createResponse({
       keywordCount: parsed.keywords ? parsed.keywords.length : 0,
@@ -221,7 +189,7 @@ export default {
       
       if (path === '/api/stats') {
         if (method === 'GET') {
-          return await getUserStats(request, env);
+          return await getStats(request, env);
         } else {
           return createErrorResponse('不支持的请求方法', 405);
         }

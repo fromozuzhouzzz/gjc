@@ -1,17 +1,6 @@
 export class ApiService {
   constructor(baseUrl = '/api') {
     this.baseUrl = baseUrl;
-    this.userId = this.getUserId();
-  }
-
-  getUserId() {
-    // 从localStorage获取或生成用户ID
-    let userId = localStorage.getItem('keyword_user_id');
-    if (!userId) {
-      userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('keyword_user_id', userId);
-    }
-    return userId;
   }
 
   async saveKeywords(keywords) {
@@ -22,7 +11,6 @@ export class ApiService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: this.userId,
           keywords: keywords
         })
       });
@@ -40,7 +28,7 @@ export class ApiService {
 
   async loadKeywords() {
     try {
-      const response = await fetch(`${this.baseUrl}/keywords?userId=${this.userId}`, {
+      const response = await fetch(`${this.baseUrl}/keywords`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -49,7 +37,7 @@ export class ApiService {
 
       if (!response.ok) {
         if (response.status === 404) {
-          // 用户还没有保存过关键词
+          // 还没有保存过关键词
           return [];
         }
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -65,7 +53,7 @@ export class ApiService {
 
   async deleteKeywords() {
     try {
-      const response = await fetch(`${this.baseUrl}/keywords?userId=${this.userId}`, {
+      const response = await fetch(`${this.baseUrl}/keywords`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

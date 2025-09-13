@@ -4,17 +4,17 @@
 
 ## 功能特性
 
-- 用户关键词的增删改查操作
+- 全局关键词的增删改查操作
 - 基于Cloudflare KV的数据持久化存储
 - CORS支持，可跨域访问
 - 数据验证和错误处理
-- 用户统计信息
+- 全局统计信息
 
 ## API端点
 
 ### 1. 获取关键词
 ```
-GET /api/keywords?userId={userId}
+GET /api/keywords
 ```
 
 响应：
@@ -31,7 +31,6 @@ POST /api/keywords
 Content-Type: application/json
 
 {
-  "userId": "user_123",
   "keywords": ["关键词1", "关键词2"]
 }
 ```
@@ -48,7 +47,7 @@ Content-Type: application/json
 
 ### 3. 删除关键词
 ```
-DELETE /api/keywords?userId={userId}
+DELETE /api/keywords
 ```
 
 响应：
@@ -59,9 +58,9 @@ DELETE /api/keywords?userId={userId}
 }
 ```
 
-### 4. 获取用户统计
+### 4. 获取统计信息
 ```
-GET /api/stats?userId={userId}
+GET /api/stats
 ```
 
 响应：

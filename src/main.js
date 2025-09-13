@@ -23,7 +23,6 @@ let colorIndex = 0; // 用于循环分配颜色
 
 // 初始化应用
 function initializeApp() {
-  const userId = getUserId();
   const appElement = document.querySelector('#app');
 
   // 创建主容器
@@ -52,12 +51,7 @@ function initializeApp() {
   titleSection.appendChild(title);
   titleSection.appendChild(subtitle);
 
-  const userSection = document.createElement('div');
-  userSection.className = 'mt-2 sm:mt-0 text-xs text-gray-500';
-  userSection.innerHTML = '用户ID: <span class="font-mono">' + userId + '</span>';
-
   headerInner.appendChild(titleSection);
-  headerInner.appendChild(userSection);
   headerContent.appendChild(headerInner);
   header.appendChild(headerContent);
 
@@ -217,15 +211,7 @@ function createKeywordManager() {
   return panel;
 }
 
-// 获取用户ID
-function getUserId() {
-  let userId = localStorage.getItem('keyword_user_id');
-  if (!userId) {
-    userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('keyword_user_id', userId);
-  }
-  return userId;
-}
+// 用户ID相关函数已移除 - 系统改为全局共享模式
 
 // 设置事件监听器
 function setupEventListeners() {

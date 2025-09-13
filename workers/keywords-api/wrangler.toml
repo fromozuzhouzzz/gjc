@@ -6,8 +6,8 @@ compatibility_flags = ["nodejs_compat"]
 # KV 命名空间绑定
 [[kv_namespaces]]
 binding = "KEYWORDS_KV"
-id = "your-kv-namespace-id"
-preview_id = "your-preview-kv-namespace-id"
+id = "f360d59dfc2948fe948c93ee4004d4a8"
+preview_id = "c7efa7429a244e2b976c73887650d511"
 
 # 环境变量
 [vars]
@@ -18,7 +18,4 @@ ENVIRONMENT = "production"
 name = "keywords-api-dev"
 vars = { ENVIRONMENT = "development" }
 
-# 路由配置
-[[routes]]
-pattern = "your-domain.com/api/*"
-zone_name = "your-domain.com"
+

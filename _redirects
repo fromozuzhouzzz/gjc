@@ -4,4 +4,4 @@
 /*    /index.html   200
 
 # API routes - redirect to Cloudflare Workers
-/api/*  https://your-worker.your-subdomain.workers.dev/:splat  200
+/api/*  https://keywords-api.andyzzz1984.workers.dev/:splat  200

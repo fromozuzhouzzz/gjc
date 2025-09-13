@@ -1,5 +1,5 @@
 export class ApiService {
-  constructor(baseUrl = '/api') {
+  constructor(baseUrl = 'https://keywords-api.andyzzz1984.workers.dev/api') {
     this.baseUrl = baseUrl;
   }
 

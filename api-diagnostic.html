@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API诊断工具</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .test-result {
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 8px;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .endpoint-test {
+            background: #e9ecef;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .endpoint-url {
+            font-family: 'Courier New', monospace;
+            background: #343a40;
+            color: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+        #results {
+            margin-top: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            background: #ffffff;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-ok { background: #28a745; }
+        .status-error { background: #dc3545; }
+        .status-warning { background: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 API诊断工具</h1>
+        <p>这个工具用于诊断CloudFlare Pages和Workers API之间的连接问题。</p>
+
+        <div class="test-section">
+            <h2>🎯 测试端点</h2>
+            <div class="endpoint-test">
+                <strong>直接Workers API:</strong>
+                <div class="endpoint-url">https://keywords-api.andyzzz1984.workers.dev/api/health</div>
+            </div>
+            <div class="endpoint-test">
+                <strong>通过Pages重定向:</strong>
+                <div class="endpoint-url">https://68dc5cb9.keywords-system.pages.dev/api/health</div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 诊断测试</h2>
+            <button onclick="runFullDiagnostic()">🚀 运行完整诊断</button>
+            <button onclick="testDirectAPI()">🎯 测试直接API</button>
+            <button onclick="testRedirectAPI()">🔄 测试重定向API</button>
+            <button onclick="testCORS()">🌐 测试CORS</button>
+            <button onclick="testKeywordsAPI()">📝 测试关键词API</button>
+            <button onclick="clearResults()">🗑️清除结果</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const DIRECT_API = 'https://keywords-api.andyzzz1984.workers.dev';
+        const PAGES_API = '/api';
+        
+        function addResult(message, type = 'info', includeTime = true) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            
+            const statusIcon = type === 'success' ? '✅' : 
+                              type === 'error' ? '❌' : 
+                              type === 'warning' ? '⚠️' : 'ℹ️';
+            
+            const timeStr = includeTime ? `[${new Date().toLocaleTimeString()}] ` : '';
+            div.innerHTML = `${statusIcon} ${timeStr}${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        async function testEndpoint(url, method = 'GET', body = null, description = '') {
+            try {
+                addResult(`测试 ${description || url} (${method})...`, 'info');
+                
+                const options = {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+                
+                const response = await fetch(url, options);
+                
+                addResult(`状态码: ${response.status} ${response.statusText}`, 
+                         response.ok ? 'success' : 'error');
+                
+                const contentType = response.headers.get('content-type');
+                addResult(`Content-Type: ${contentType}`, 'info');
+                
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    addResult(`响应数据: ${JSON.stringify(data, null, 2)}`, 'success');
+                    return { success: true, data, status: response.status };
+                } else {
+                    const text = await response.text();
+                    const preview = text.substring(0, 200) + (text.length > 200 ? '...' : '');
+                    addResult(`响应内容 (前200字符): ${preview}`, 'warning');
+                    return { success: false, text, status: response.status };
+                }
+            } catch (error) {
+                addResult(`请求失败: ${error.message}`, 'error');
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function testDirectAPI() {
+            addResult('=== 测试直接Workers API ===', 'info', false);
+            await testEndpoint(`${DIRECT_API}/api/health`, 'GET', null, '健康检查');
+            await testEndpoint(`${DIRECT_API}/api/keywords`, 'GET', null, '获取关键词');
+        }
+
+        async function testRedirectAPI() {
+            addResult('=== 测试Pages重定向API ===', 'info', false);
+            await testEndpoint(`${PAGES_API}/health`, 'GET', null, '健康检查');
+            await testEndpoint(`${PAGES_API}/keywords`, 'GET', null, '获取关键词');
+        }
+
+        async function testCORS() {
+            addResult('=== 测试CORS配置 ===', 'info', false);
+            
+            try {
+                const response = await fetch(`${DIRECT_API}/api/health`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'GET',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+                
+                addResult(`CORS预检状态: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                const corsHeaders = [
+                    'Access-Control-Allow-Origin',
+                    'Access-Control-Allow-Methods',
+                    'Access-Control-Allow-Headers'
+                ];
+                
+                corsHeaders.forEach(header => {
+                    const value = response.headers.get(header);
+                    addResult(`${header}: ${value || '未设置'}`, value ? 'success' : 'warning');
+                });
+                
+            } catch (error) {
+                addResult(`CORS测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testKeywordsAPI() {
+            addResult('=== 测试关键词API完整流程 ===', 'info', false);
+            
+            // 测试保存关键词
+            const testKeywords = ['测试关键词1', '测试关键词2', `诊断测试_${Date.now()}`];
+            const saveResult = await testEndpoint(`${PAGES_API}/keywords`, 'POST', 
+                { keywords: testKeywords }, '保存关键词');
+            
+            if (saveResult.success) {
+                // 测试获取关键词
+                await new Promise(resolve => setTimeout(resolve, 1000)); // 等待1秒
+                await testEndpoint(`${PAGES_API}/keywords`, 'GET', null, '获取保存的关键词');
+            }
+        }
+
+        async function runFullDiagnostic() {
+            clearResults();
+            addResult('🚀 开始完整诊断...', 'info', false);
+            addResult('', 'info', false);
+            
+            await testDirectAPI();
+            addResult('', 'info', false);
+            
+            await testRedirectAPI();
+            addResult('', 'info', false);
+            
+            await testCORS();
+            addResult('', 'info', false);
+            
+            await testKeywordsAPI();
+            addResult('', 'info', false);
+            
+            addResult('✅ 诊断完成！', 'success', false);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // 页面加载时自动运行基础测试
+        window.addEventListener('load', () => {
+            addResult('🔧 API诊断工具已加载', 'info');
+            addResult('点击"运行完整诊断"开始测试', 'info');
+        });
+    </script>
+</body>
+</html>

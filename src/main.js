@@ -1,9 +1,13 @@
 import "./style.css";
+import { ApiService } from "./services/ApiService.js";
 
 // 关键词识别和标注系统
 let keywords = []; // 现在存储 {text: string, color: string} 对象
 let highlights = [];
 let currentHighlightIndex = -1;
+
+// 初始化API服务
+const apiService = new ApiService('/api');
 
 // 预定义的颜色方案
 const KEYWORD_COLORS = [
@@ -170,13 +174,20 @@ function createKeywordManager() {
   content.className = 'p-6 flex-1 flex flex-col min-h-0';
 
   const titleContainer = document.createElement('div');
-  titleContainer.className = 'mb-4';
+  titleContainer.className = 'mb-4 flex justify-between items-center';
 
   const title = document.createElement('h2');
   title.className = 'text-xl font-bold text-gray-800';
   title.innerHTML = '关键词管理 (<span id="keyword-count">0</span>个)';
 
+  const syncButton = document.createElement('button');
+  syncButton.id = 'sync-btn';
+  syncButton.className = 'px-3 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors';
+  syncButton.innerHTML = '🔄 同步';
+  syncButton.title = '手动同步到云端';
+
   titleContainer.appendChild(title);
+  titleContainer.appendChild(syncButton);
 
   const inputContainer = document.createElement('div');
   inputContainer.className = 'mb-4';
@@ -235,7 +246,8 @@ function setupEventListeners() {
   document.getElementById('prev-btn').addEventListener('click', () => navigateHighlight(-1));
   document.getElementById('next-btn').addEventListener('click', () => navigateHighlight(1));
 
-
+  // 同步按钮
+  document.getElementById('sync-btn').addEventListener('click', syncToCloud);
 
   // 文本变化时清除高亮
   document.getElementById('text-input').addEventListener('input', () => {
@@ -256,7 +268,7 @@ function setupEventListeners() {
 }
 
 // 添加关键词
-function addKeyword() {
+async function addKeyword() {
   const input = document.getElementById('keyword-input');
   const keyword = input.value.trim();
 
@@ -283,7 +295,7 @@ function addKeyword() {
 
   input.value = '';
   renderKeywords();
-  saveKeywords();
+  await saveKeywords();
   showMessage('关键词添加成功', 'success');
 }
 
@@ -379,10 +391,10 @@ function updateKeywordColorsDisplay() {
 }
 
 // 删除关键词
-function removeKeyword(keywordText) {
+async function removeKeyword(keywordText) {
   keywords = keywords.filter(k => k.text !== keywordText);
   renderKeywords();
-  saveKeywords();
+  await saveKeywords();
   showMessage('关键词已删除', 'success');
 }
 
@@ -688,17 +700,29 @@ function showMessage(message, type = 'info') {
   }, 3000);
 }
 
-// 保存关键词到本地存储
-function saveKeywords() {
+// 保存关键词到本地存储和云端
+async function saveKeywords() {
   try {
+    // 保存到本地存储
     localStorage.setItem('keywords', JSON.stringify(keywords));
+
+    // 保存到云端
+    try {
+      const keywordTexts = keywords.map(k => k.text);
+      await apiService.saveKeywords(keywordTexts);
+      console.log('关键词已同步到云端');
+    } catch (cloudError) {
+      console.warn('云端保存失败，但本地保存成功:', cloudError);
+      // 不显示错误消息，因为本地保存成功了
+    }
   } catch (error) {
     console.error('保存关键词失败:', error);
+    showMessage('保存关键词失败', 'error');
   }
 }
 
 // 从本地存储加载关键词
-function loadKeywords() {
+function loadKeywordsFromLocal() {
   try {
     const saved = localStorage.getItem('keywords');
     if (!saved) return [];
@@ -725,20 +749,94 @@ function loadKeywords() {
       return item;
     });
   } catch (error) {
-    console.error('加载关键词失败:', error);
+    console.error('加载本地关键词失败:', error);
     return [];
   }
 }
 
+// 从云端和本地加载关键词
+async function loadKeywords() {
+  try {
+    // 首先尝试从云端加载
+    const cloudKeywords = await apiService.loadKeywords();
+
+    if (cloudKeywords && cloudKeywords.length > 0) {
+      console.log('从云端加载了', cloudKeywords.length, '个关键词');
+
+      // 将云端数据转换为本地格式（包含颜色信息）
+      const keywordsWithColors = cloudKeywords.map((keyword, index) => ({
+        text: keyword,
+        color: KEYWORD_COLORS[index % KEYWORD_COLORS.length]
+      }));
+
+      // 同步到本地存储
+      localStorage.setItem('keywords', JSON.stringify(keywordsWithColors));
+
+      return keywordsWithColors;
+    }
+  } catch (error) {
+    console.warn('从云端加载关键词失败，尝试从本地加载:', error);
+  }
+
+  // 如果云端加载失败，从本地加载
+  const localKeywords = loadKeywordsFromLocal();
+  console.log('从本地加载了', localKeywords.length, '个关键词');
+
+  return localKeywords;
+}
+
+// 手动同步到云端
+async function syncToCloud() {
+  try {
+    const syncBtn = document.getElementById('sync-btn');
+    const originalText = syncBtn.innerHTML;
+
+    // 显示同步状态
+    syncBtn.innerHTML = '🔄 同步中...';
+    syncBtn.disabled = true;
+    showMessage('正在同步到云端...', 'info');
+
+    const keywordTexts = keywords.map(k => k.text);
+    await apiService.saveKeywords(keywordTexts);
+
+    showMessage('同步到云端成功', 'success');
+
+    // 恢复按钮状态
+    syncBtn.innerHTML = originalText;
+    syncBtn.disabled = false;
+  } catch (error) {
+    console.error('同步失败:', error);
+    showMessage('同步到云端失败', 'error');
+
+    // 恢复按钮状态
+    const syncBtn = document.getElementById('sync-btn');
+    syncBtn.innerHTML = '🔄 同步';
+    syncBtn.disabled = false;
+  }
+}
+
 // 初始化应用
-function initApp() {
-  keywords = loadKeywords();
-  renderKeywords();
-  setupEventListeners();
+async function initApp() {
+  try {
+    // 显示加载状态
+    showMessage('正在加载关键词...', 'info');
+
+    keywords = await loadKeywords();
+    renderKeywords();
+    setupEventListeners();
+
+    // 隐藏加载消息
+    if (keywords.length > 0) {
+      showMessage(`已加载 ${keywords.length} 个关键词`, 'success');
+    }
+  } catch (error) {
+    console.error('初始化应用失败:', error);
+    showMessage('初始化失败，请刷新页面重试', 'error');
+  }
 }
 
 // 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initializeApp();
-  initApp();
+  await initApp();
 });

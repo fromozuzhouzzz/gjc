@@ -1,13 +1,8 @@
 name = "keywords-frontend"
 compatibility_date = "2024-09-10"
 
-[build]
-command = "npm run build"
-cwd = "."
-
-[build.upload]
-format = "directory"
-dir = "dist"
+# Pages 配置
+pages_build_output_dir = "dist"
 
 # 环境变量配置
 [vars]

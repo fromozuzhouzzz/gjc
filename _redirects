@@ -1,7 +1,7 @@
 # Cloudflare Pages Redirects Configuration
 
+# API routes - redirect to Cloudflare Workers (MUST be before SPA fallback)
+/api/*  https://keywords-api.andyzzz1984.workers.dev/api/:splat  200
+
 # SPA fallback - redirect all non-file requests to index.html
 /*    /index.html   200
-
-# API routes - redirect to Cloudflare Workers
-/api/*  https://keywords-api.andyzzz1984.workers.dev/:splat  200

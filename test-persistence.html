@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关键词持久化测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #results {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>关键词持久化测试</h1>
+    <p>这个页面用于测试关键词在不同浏览器间的持久化功能。</p>
+
+    <div class="test-section">
+        <h2>测试步骤</h2>
+        <ol>
+            <li>点击"测试API连接"确认API正常工作</li>
+            <li>点击"保存测试关键词"将测试数据保存到云端</li>
+            <li>点击"读取云端关键词"验证数据是否正确保存</li>
+            <li>在不同浏览器中打开此页面，重复步骤3验证跨浏览器持久化</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>测试操作</h2>
+        <button onclick="testApiConnection()">测试API连接</button>
+        <button onclick="saveTestKeywords()">保存测试关键词</button>
+        <button onclick="loadKeywords()">读取云端关键词</button>
+        <button onclick="clearKeywords()">清除所有关键词</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = '/api';
+        
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        async function testApiConnection() {
+            try {
+                addResult('正在测试API连接...', 'info');
+                const response = await fetch(`${API_BASE}/keywords`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(`API连接成功！当前云端有 ${data.keywords ? data.keywords.length : 0} 个关键词`, 'success');
+                } else {
+                    addResult(`API连接失败：HTTP ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addResult(`API连接错误：${error.message}`, 'error');
+            }
+        }
+
+        async function saveTestKeywords() {
+            try {
+                addResult('正在保存测试关键词到云端...', 'info');
+                
+                const testKeywords = [
+                    '测试关键词1',
+                    '测试关键词2', 
+                    '跨浏览器测试',
+                    '持久化验证',
+                    `测试时间_${new Date().getTime()}`
+                ];
+
+                const response = await fetch(`${API_BASE}/keywords`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        keywords: testKeywords
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(`测试关键词保存成功！共保存 ${data.count} 个关键词`, 'success');
+                } else {
+                    const errorData = await response.json();
+                    addResult(`保存失败：${errorData.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                addResult(`保存错误：${error.message}`, 'error');
+            }
+        }
+
+        async function loadKeywords() {
+            try {
+                addResult('正在从云端读取关键词...', 'info');
+                
+                const response = await fetch(`${API_BASE}/keywords`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const keywords = data.keywords || [];
+                    
+                    if (keywords.length > 0) {
+                        addResult(`成功读取 ${keywords.length} 个关键词：${keywords.join(', ')}`, 'success');
+                        addResult(`最后更新时间：${data.updatedAt || '未知'}`, 'info');
+                    } else {
+                        addResult('云端没有保存的关键词', 'info');
+                    }
+                } else {
+                    const errorData = await response.json();
+                    addResult(`读取失败：${errorData.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                addResult(`读取错误：${error.message}`, 'error');
+            }
+        }
+
+        async function clearKeywords() {
+            try {
+                if (!confirm('确定要清除所有关键词吗？')) {
+                    return;
+                }
+                
+                addResult('正在清除所有关键词...', 'info');
+                
+                const response = await fetch(`${API_BASE}/keywords`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    addResult('所有关键词已清除', 'success');
+                } else {
+                    const errorData = await response.json();
+                    addResult(`清除失败：${errorData.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                addResult(`清除错误：${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载时自动测试API连接
+        window.addEventListener('load', () => {
+            addResult('页面加载完成，开始测试...', 'info');
+            testApiConnection();
+        });
+    </script>
+</body>
+</html>

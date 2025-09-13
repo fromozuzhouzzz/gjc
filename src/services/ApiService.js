@@ -1,11 +1,11 @@
 export class ApiService {
-  constructor(baseUrl = 'https://keywords-api.andyzzz1984.workers.dev/api') {
+  constructor(baseUrl = 'https://keywords-api.andyzzz1984.workers.dev') {
     this.baseUrl = baseUrl;
   }
 
   async saveKeywords(keywords) {
     try {
-      const response = await fetch(`${this.baseUrl}/keywords`, {
+      const response = await fetch(`${this.baseUrl}/api/keywords`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -28,7 +28,7 @@ export class ApiService {
 
   async loadKeywords() {
     try {
-      const response = await fetch(`${this.baseUrl}/keywords`, {
+      const response = await fetch(`${this.baseUrl}/api/keywords`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -53,7 +53,7 @@ export class ApiService {
 
   async deleteKeywords() {
     try {
-      const response = await fetch(`${this.baseUrl}/keywords`, {
+      const response = await fetch(`${this.baseUrl}/api/keywords`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

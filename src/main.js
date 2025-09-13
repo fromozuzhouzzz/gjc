@@ -7,7 +7,7 @@ let highlights = [];
 let currentHighlightIndex = -1;
 
 // 初始化API服务
-const apiService = new ApiService('/api');
+const apiService = new ApiService();
 
 // 预定义的颜色方案
 const KEYWORD_COLORS = [

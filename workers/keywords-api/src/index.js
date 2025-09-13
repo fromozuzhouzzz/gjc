@@ -203,7 +203,22 @@ export default {
           version: '1.0.0',
         });
       }
-      
+
+      // 根路径处理
+      if (path === '/') {
+        return createResponse({
+          message: 'Keywords API Service',
+          version: '1.0.0',
+          endpoints: [
+            'GET /api/keywords - 获取关键词',
+            'POST /api/keywords - 保存关键词',
+            'DELETE /api/keywords - 删除关键词',
+            'GET /api/stats - 获取统计信息',
+            'GET /api/health - 健康检查'
+          ]
+        });
+      }
+
       // 404 处理
       return createErrorResponse('API端点不存在', 404);
       

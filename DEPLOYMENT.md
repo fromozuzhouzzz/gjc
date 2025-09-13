@@ -81,17 +81,24 @@ npm run build
 
 #### 方法一：通过 Git 自动部署（推荐）
 
-1. 将代码推送到 GitHub/GitLab
+**重要：现在推荐使用 GitHub 自动同步部署，详细步骤请参考 `cloudflare-pages-setup.md`**
+
+1. 将代码推送到 GitHub
 2. 登录 Cloudflare Dashboard
 3. 进入 Pages 部分
 4. 点击 "Create a project"
-5. 连接你的 Git 仓库
-6. 配置构建设置：
+5. 选择 "Connect to Git"
+6. 连接你的 GitHub 仓库 `gjc`
+7. 配置构建设置：
+   - 项目名称：`keywords-system`
    - 构建命令：`npm run build`
    - 构建输出目录：`dist`
+   - 生产分支：`main`
    - 环境变量：添加必要的环境变量
 
-#### 方法二：使用 Wrangler CLI
+配置完成后，每次推送到 main 分支都会自动触发重新部署。
+
+#### 方法二：使用 Wrangler CLI（备用方案）
 
 ```bash
 # 使用 wrangler pages 部署
